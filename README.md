@@ -1,8 +1,8 @@
-# LLMChat-UI
+# LLMChat UI
 
 ## 概述
 
-**LLMChat-UI** 是一个为 [LLMChat](https://github.com/chubin518/llmchat) 开发平台开发的前端项目。基于 `Vue3.0` 、`Vite` 、 [Naive UI](https://www.naiveui.com/) 和 `TypeScript` , 融合最新的前端技术栈，提供了一个健壮且高效的开发环境。
+**LLMChat UI** 是一个为 [LLMChat](https://github.com/chubin518/llmchat) 开发平台开发的前端项目。基于 `Vue3.0` 、`Vite` 、 [Naive UI](https://www.naiveui.com/) 和 `TypeScript` , 融合最新的前端技术栈，提供了一个健壮且高效的开发环境。
 
 ## 🌈 特性
 - 📦 二次封装的实用高扩展性组件
