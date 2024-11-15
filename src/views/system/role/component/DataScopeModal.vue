@@ -7,15 +7,28 @@
     class="w-2/5"
     content-class="px-16"
   >
+    <n-form-item path="name" label="角色名称">
+      <n-input disabled v-model:value="form_data.name" maxlength="64" show-count />
+    </n-form-item>
+    <n-form-item path="code" label="角色编码">
+      <n-input disabled v-model:value="form_data.code" maxlength="64" show-count />
+    </n-form-item>
     <n-form ref="formRef" :model="form_data">
       <n-form-item label="数据范围" path="dataScope">
         <n-select
           v-model:value="form_data.dataScope"
           :options="DataScopeOptions"
           placeholder="请选择数据范围"
+          @update:value="
+            (value) => {
+              if (value !== 1) {
+                form_data.deptIds = [];
+              }
+            }
+          "
         />
       </n-form-item>
-      <n-form-item path="name">
+      <n-form-item path="name" v-if="form_data.dataScope === 1">
         <template #label>
           <n-flex class="w-80" align="center" justify="space-between">
             <n-text>数据权限</n-text>
@@ -26,7 +39,7 @@
                 @update:checked="
                   (checked) => {
                     if (checked) {
-                      form_data.deptIds = getTreeAll(treeData);
+                      form_data.deptIds = getTreeAll(deptList);
                     } else {
                       form_data.deptIds = [];
                     }
@@ -44,13 +57,16 @@
           cascade
           checkable
           expand-on-click
+          label-field="label"
+          key-field="value"
+          children-field="children"
           :virtual-scroll="true"
           :checked-keys="form_data.deptIds"
           :default-expand-all="expanded"
-          :data="treeData"
+          :data="deptList"
           @update:checked-keys="
             (checked) => {
-              form_data.deptIds = [form_data.deptIds, ...checked];
+              form_data.deptIds = [...checked];
             }
           "
         />
@@ -67,65 +83,46 @@
 
 <script setup lang="ts">
   import { ref } from 'vue';
-  import { useMessage } from 'naive-ui';
   import { getTreeAll } from '@/utils';
   import { DataScopeOptions } from '@/utils/optionsUtil';
-  const message = useMessage();
+  import { saveDataScope, getDataScope } from '@/api/system/role';
+  import { getDeptTree } from '@/api/system/dept';
+
+  const emit = defineEmits(['onClose']);
   const showModal = ref<boolean>(false);
   const formRef: any = ref(null);
-  const form_data = ref<{
-    id?: number;
-    dataScope: number;
-    deptIds: number[];
-  }>({
+  const defaultForm = {
     dataScope: 0,
     deptIds: [],
-  });
+    name: '',
+    code: '',
+    id: 0,
+  };
+  const form_data = ref<{
+    id: number;
+    name: string;
+    code: string;
+    dataScope: number;
+    deptIds: number[];
+  }>({ ...defaultForm });
   const checkedAll = ref<boolean>(false);
   const expanded = ref<boolean>(true);
-  const treeData = [
-    {
-      label: '总公司',
-      key: 1729048848368,
-      children: [
-        {
-          label: '北京分公司',
-          key: 1729048848367,
-          children: [
-            {
-              label: '研发部门',
-              key: 1729048848364,
-            },
-            {
-              label: '产品部门',
-              key: 1729048848363,
-            },
-          ],
-        },
-        {
-          label: '上海分公司',
-          key: 1729048848366,
-          children: [
-            {
-              label: '运营部门',
-              key: 1729048848362,
-            },
-            {
-              label: '销售部门',
-              key: 1729048848365,
-            },
-          ],
-        },
-      ],
-    },
-  ];
-  const formSubmit = () => {};
+  const deptList = ref<any[]>([]);
+  const fetchdeptList = async () => {
+    const { data } = await getDeptTree(0);
+    deptList.value = data;
+  };
+  const formSubmit = async () => {
+    await saveDataScope(form_data.value);
+    showModal.value = false;
+    emit('onClose');
+  };
 
-  const openModal = (id: any) => {
-    // TODO: 获取详情
-    form_data.value.id = id;
-    console.log('app id', id);
+  const openModal = async (id: any) => {
     showModal.value = true;
+    await fetchdeptList();
+    const { data } = await getDataScope(id);
+    form_data.value = Object.assign({}, form_data.value, data);
   };
 
   defineExpose({

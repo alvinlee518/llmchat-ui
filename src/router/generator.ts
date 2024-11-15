@@ -1,4 +1,4 @@
-import { adminMenus } from '@/api/system/menu';
+import { adminMenus } from '@/api/system/account';
 import { constantRouterIcon } from './icons';
 import { RouteRecordRaw } from 'vue-router';
 import { Layout, ParentLayout } from '@/router/constant';
@@ -24,7 +24,7 @@ export const generateRoutes = (routerMap, parent?): any[] => {
       // 路由名称，建议唯一
       name: item.name ?? '',
       // 该路由对应页面的 组件
-      component: item.component,
+      // component: item.component || Layout,
       // meta: 页面标题, 菜单图标, 页面权限(供指令权限用，可去掉)
       meta: {
         ...item.meta,
@@ -33,7 +33,13 @@ export const generateRoutes = (routerMap, parent?): any[] => {
         permissions: item.meta.permissions || null,
       },
     };
-
+    if (item.component) {
+      currentRoute.component = item.component.startsWith('/')
+        ? item.component
+        : `/${item.component}`;
+    } else {
+      currentRoute.component = 'LAYOUT';
+    }
     // 为了防止出现后端返回结果不规范，处理有可能出现拼接出两个 反斜杠
     currentRoute.path = currentRoute.path.replace('//', '/');
     // 重定向
@@ -54,8 +60,8 @@ export const generateRoutes = (routerMap, parent?): any[] => {
  * @returns {Promise<Router>}
  */
 export const generateDynamicRoutes = async (): Promise<RouteRecordRaw[]> => {
-  const result = await adminMenus();
-  const router = generateRoutes(result);
+  const { data } = await adminMenus();
+  const router = generateRoutes(data);
   asyncImportRoute(router);
   return router;
 };

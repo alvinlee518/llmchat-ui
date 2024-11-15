@@ -5,53 +5,53 @@ import { renderIcon } from '@/utils/index';
 
 const routes: Array<RouteRecordRaw> = [
   {
-    path: '/apps',
-    name: 'apps',
+    path: '/app',
+    name: 'app',
     component: Layout,
     meta: {
       title: '应用管理',
       icon: renderIcon(AppsSharp),
-      sort: 12,
+      sort: 10,
     },
     children: [
       {
         path: 'index',
-        name: `apps_index`,
+        name: `app_index`,
         meta: {
           title: '应用管理',
-          activeMenu: 'apps_index',
+          activeMenu: 'app_index',
         },
-        component: () => import('@/views/apps/index.vue'),
+        component: () => import('@/views/app/index.vue'),
       },
       {
         path: 'modify/:id?',
-        name: `apps_modify`,
+        name: `app_modify`,
         meta: {
           title: '编辑应用',
-          activeMenu: 'apps_modify',
+          activeMenu: 'app_modify',
           hidden: true,
         },
-        component: () => import('@/views/apps/modify.vue'),
+        component: () => import('@/views/app/modify.vue'),
       },
       {
         path: 'overview/:id?',
-        name: `apps_`,
+        name: `app_`,
         meta: {
           title: '监测应用',
-          activeMenu: 'apps_overview',
+          activeMenu: 'app_overview',
           hidden: true,
         },
-        component: () => import('@/views/apps/overview.vue'),
+        component: () => import('@/views/app/overview.vue'),
       },
       {
         path: 'preview/:id?',
-        name: `apps_preview`,
+        name: `app_preview`,
         meta: {
           title: '预览应用',
-          activeMenu: 'apps_preview',
+          activeMenu: 'app_preview',
           hidden: true,
         },
-        component: () => import('@/views/apps/preview.vue'),
+        component: () => import('@/views/app/preview.vue'),
       },
     ],
   },

@@ -1,19 +1,25 @@
 import { Alova } from '@/utils/http/alova/index';
-import { ListDate } from 'mock/system/menu';
 
-/**
- * @description: 根据用户id获取用户菜单
- */
-export function adminMenus() {
-  return Alova.Get('/menus');
+export function queryPage(params) {
+  return Alova.Get<any>(`/menu/list`, { params });
 }
 
-/**
- * 获取tree菜单列表
- * @param params
- */
-export function getMenuList(params?) {
-  return Alova.Get<{ list: ListDate[] }>('/menu/list', {
-    params,
-  });
+export function remove(params) {
+  return Alova.Delete<any>(`/menu/${params}`);
+}
+
+export function create(data) {
+  return Alova.Post<any>('/menu/create', data);
+}
+
+export function modify(data) {
+  return Alova.Put<any>('/menu/modify', data);
+}
+
+export function detail(id) {
+  return Alova.Get<any>(`/menu/${id}`);
+}
+
+export function getMenuTree(pid) {
+  return Alova.Get<any>(`/menu/tree/${pid}`);
 }

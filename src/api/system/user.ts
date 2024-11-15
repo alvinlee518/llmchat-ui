@@ -1,45 +1,21 @@
 import { Alova } from '@/utils/http/alova/index';
 
-/**
- * @description: 获取用户信息
- */
-export function getUserInfo() {
-  return Alova.Get<InResult>('/admin_info', {
-    meta: {
-      isReturnNativeResponse: true,
-    },
-  });
+export function queryPage(params) {
+  return Alova.Get<any>(`/user/list`, { params });
 }
 
-/**
- * @description: 用户登录
- */
-export function login(params) {
-  return Alova.Post<InResult>(
-    '/login',
-    {
-      params,
-    },
-    {
-      meta: {
-        isReturnNativeResponse: true,
-      },
-    }
-  );
+export function remove(params) {
+  return Alova.Delete<any>(`/user/${params}`);
 }
 
-/**
- * @description: 用户修改密码
- */
-export function changePassword(params, uid) {
-  return Alova.Post(`/user/u${uid}/changepw`, { params });
+export function create(data) {
+  return Alova.Post<any>('/user/create', data);
 }
 
-/**
- * @description: 用户登出
- */
-export function logout(params) {
-  return Alova.Post('/login/logout', {
-    params,
-  });
+export function modify(data) {
+  return Alova.Put<any>('/user/modify', data);
+}
+
+export function detail(id) {
+  return Alova.Get<any>(`/user/${id}`);
 }

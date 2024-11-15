@@ -20,7 +20,7 @@
         </n-gi>
         <n-gi :span="7">
           <n-form-item label="授权状态" path="userScope">
-            <n-select v-model:value="searchForm.userScope" clearable :options="UserScopeOptions" />
+            <n-select v-model:value="searchForm.userScope" :options="UserScopeOptions" />
           </n-form-item>
         </n-gi>
         <n-gi :span="3">
@@ -31,6 +31,7 @@
       </n-grid>
     </n-form>
     <n-data-table
+      remote
       :bordered="false"
       :columns="columns"
       :data="dataList"
@@ -41,26 +42,32 @@
     />
     <template #footer>
       <n-flex justify="end">
-        <n-button @click="onCancel"> 取消授权 </n-button>
-        <n-button type="info" @click="formSubmit"> 批量授权 </n-button>
+        <n-button
+          type="warning"
+          @click="onCancel"
+          :disabled="!(checkedList && checkedList.length >= 1)"
+        >
+          批量取消授权
+        </n-button>
+        <n-button
+          type="info"
+          @click="formSubmit"
+          :disabled="!(checkedList && checkedList.length >= 1)"
+        >
+          批量授权
+        </n-button>
       </n-flex>
     </template>
   </n-modal>
 </template>
 
 <script setup lang="ts">
-  import { h, onMounted, reactive, ref } from 'vue';
-  import { NButton, NText, useMessage } from 'naive-ui';
-  import { UserScopeOptions, findUserScopeLabel } from '@/utils/optionsUtil';
-  const message = useMessage();
+  import { h, reactive, ref } from 'vue';
+  import { NButton, NText } from 'naive-ui';
+  import { UserScopeOptions } from '@/utils/optionsUtil';
+  import { getUserScope, allocated, unallocated } from '@/api/system/role';
   const showModal = ref<boolean>(false);
   const formRef: any = ref(null);
-  const form_data = ref<{
-    id?: number;
-    menuIds: number[];
-  }>({
-    menuIds: [],
-  });
 
   const checkedList = ref<any[]>([]);
   const dataList = ref<any[]>([]);
@@ -68,16 +75,16 @@
     name: string;
     phone: string;
     userScope: number;
+    roleId: number;
     page: number;
-    pageSize: number;
-    status: number;
+    size: number;
   }>({
     page: 1,
-    pageSize: 10,
+    size: 10,
     name: '',
     phone: '',
-    userScope: 0,
-    status: 1,
+    userScope: 1,
+    roleId: 0,
   });
 
   const columns = [
@@ -89,26 +96,16 @@
       key: 'name',
     },
     {
+      title: '用户名',
+      key: 'username',
+    },
+    {
       title: '邮箱',
       key: 'email',
     },
     {
       title: '手机号',
       key: 'phone',
-    },
-    {
-      title: '授权状态',
-      key: 'userScope',
-      width: 100,
-      render(row) {
-        return h(
-          NText,
-          {},
-          {
-            default: () => findUserScopeLabel(row.userScope),
-          }
-        );
-      },
     },
     {
       title: '更新时间',
@@ -120,50 +117,48 @@
   const pagination = reactive({
     page: 1,
     pageSize: 10,
-    pageCount: 1,
+    itemCount: 1,
     onChange: async (page: number) => {
       pagination.page = page;
       await fetchData();
     },
   });
 
-  const fetchData = () => {
-    dataList.value = [
-      {
-        id: 1728366909514,
-        name: '应用名称',
-        description:
-          '这是应用的描述这是应用的描述这是应用的描述这是应用的描述这是应用的描述这是应用的描述这是应用的描述这是应用的描述这是应用的描述',
-        total: 1,
-        updateAt: '2024-10-08 10:57:23',
-      },
-    ];
+  const fetchData = async () => {
+    const { data, total, page } = await getUserScope(searchForm.value);
+    dataList.value = [...data];
+    pagination.page = page;
+    pagination.itemCount = total;
   };
+
   const onSearch = async () => {
     searchForm.value.page = 1;
     await fetchData();
   };
 
-  const formSubmit = () => {
+  const formSubmit = async () => {
+    await allocated({
+      roleId: searchForm.value.roleId,
+      userIds: checkedList.value,
+    });
     showModal.value = false;
   };
 
-  const onCancel = () => {
+  const onCancel = async () => {
+    await unallocated({
+      roleId: searchForm.value.roleId,
+      userIds: checkedList.value,
+    });
     showModal.value = false;
   };
 
   const openModal = (id: any) => {
-    // TODO: 获取详情
-    form_data.value.id = id;
-    console.log('app id', id);
     showModal.value = true;
+    searchForm.value = Object.assign({ ...searchForm.value }, { roleId: id });
+    onSearch();
   };
 
   defineExpose({
     openModal,
-  });
-
-  onMounted(() => {
-    onSearch();
   });
 </script>

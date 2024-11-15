@@ -44,6 +44,7 @@
         primaryColorHover: lightenStr,
         primaryColorPressed: lightenStr,
         primaryColorSuppl: appTheme,
+        borderRadius: '8px',
       },
       LoadingBar: {
         colorLoading: appTheme,

@@ -4,7 +4,10 @@
     <div class="view-account-container">
       <div class="view-account-top">
         <div class="view-account-top-logo">
-          <img :src="websiteConfig.loginImage" alt="" />
+          <n-flex align="center" justify="center">
+            <img :src="websiteConfig.logo" alt="" class="h-12 w-12" />
+            <n-h1>LLMChat</n-h1>
+          </n-flex>
         </div>
         <div class="view-account-top-desc">{{ websiteConfig.loginDesc }}</div>
       </div>
@@ -45,7 +48,7 @@
                 <n-checkbox v-model:checked="autoLogin">自动登录</n-checkbox>
               </div>
               <div class="flex-initial order-last">
-                <a href="javascript:">忘记密码</a>
+                <!-- <a href="javascript:">忘记密码</a> -->
               </div>
             </div>
           </n-form-item>
@@ -56,7 +59,7 @@
           </n-form-item>
           <n-form-item class="default-color">
             <div class="flex view-account-other">
-              <div class="flex-initial">
+              <!-- <div class="flex-initial">
                 <span>其它登录方式</span>
               </div>
               <div class="flex-initial mx-2">
@@ -75,7 +78,7 @@
               </div>
               <div class="flex-initial" style="margin-left: auto">
                 <a href="javascript:">注册账号</a>
-              </div>
+              </div> -->
             </div>
           </n-form-item>
         </n-form>
@@ -105,8 +108,8 @@
   const LOGIN_NAME = PageEnum.BASE_LOGIN_NAME;
 
   const formInline = reactive({
-    username: 'admin',
-    password: '123456',
+    username: '',
+    password: '',
     isCaptcha: true,
   });
 

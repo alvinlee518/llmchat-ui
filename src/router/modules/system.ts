@@ -24,21 +24,21 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('@/views/system/dict/index.vue'),
       },
       {
-        path: 'dict_list',
-        name: 'dict_list',
+        path: 'dict_data/:id?',
+        name: 'dict_data',
         meta: {
           title: '字典数据',
           hidden: true,
         },
-        component: () => import('@/views/system/dict/list.vue'),
+        component: () => import('@/views/system/dict/data.vue'),
       },
       {
-        path: 'position',
-        name: 'system_position',
+        path: 'post',
+        name: 'system_post',
         meta: {
           title: '岗位管理',
         },
-        component: () => import('@/views/system/position/index.vue'),
+        component: () => import('@/views/system/post/index.vue'),
       },
       {
         path: 'dept',
@@ -55,6 +55,15 @@ const routes: Array<RouteRecordRaw> = [
           title: '用户管理',
         },
         component: () => import('@/views/system/user/index.vue'),
+      },
+      {
+        path: '/user/profile',
+        name: 'user_profile',
+        meta: {
+          title: '个人中心',
+          hidden: true,
+        },
+        component: () => import('@/views/system/user/profile.vue'),
       },
       {
         path: 'role',

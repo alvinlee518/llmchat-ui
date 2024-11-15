@@ -49,7 +49,8 @@
             <n-input
               type="password"
               v-model:value="form_data.password"
-              maxlength="64"
+              :maxlength="32"
+              :minlength="8"
               show-password-on="mousedown"
             />
           </n-form-item>
@@ -69,18 +70,16 @@
             <n-tree-select
               default-expand-all
               :options="deptList"
-              :default-value="form_data.deptId"
-              @update:value="
-                (value) => {
-                  form_data.deptId = value;
-                }
-              "
+              label-field="label"
+              key-field="value"
+              children-field="children"
+              v-model:value="form_data.deptId"
             />
           </n-form-item>
         </n-gi>
         <n-gi>
-          <n-form-item path="posIds" label="岗位">
-            <n-select multiple v-model:value="form_data.posIds" clearable :options="positionList" />
+          <n-form-item path="postIds" label="岗位">
+            <n-select multiple v-model:value="form_data.postIds" clearable :options="postList" />
           </n-form-item>
         </n-gi>
         <n-gi>
@@ -111,14 +110,31 @@
 
 <script setup lang="ts">
   import { ref } from 'vue';
-  import { useMessage } from 'naive-ui';
 
+  import { useMessage } from 'naive-ui';
+  import { create, modify, detail } from '@/api/system/user';
+  import { getDeptTree } from '@/api/system/dept';
+  import { selectOptions as getRoleOptions } from '@/api/system/role';
+  import { selectOptions as getPostOptions } from '@/api/system/post';
   const message = useMessage();
   const showModal = ref<boolean>(false);
   const deptList = ref<any[]>([]);
-  const positionList = ref<any[]>([]);
+  const postList = ref<any[]>([]);
   const roleList = ref<any[]>([]);
   const formRef: any = ref(null);
+  const emit = defineEmits(['onClose']);
+  const defaultForm = {
+    name: '',
+    remark: '',
+    gender: 0,
+    phone: '',
+    email: '',
+    username: '',
+    password: '',
+    postIds: [],
+    deptId: 0,
+    roleIds: [],
+  };
   const form_data = ref<{
     id?: number;
     name: string;
@@ -128,21 +144,10 @@
     email: string;
     username: string;
     password: string;
-    posIds: number[];
+    postIds: number[];
     deptId: number;
     roleIds: number[];
-  }>({
-    name: '',
-    remark: '',
-    gender: 0,
-    phone: '',
-    email: '',
-    username: '',
-    password: '',
-    posIds: [],
-    deptId: 0,
-    roleIds: [],
-  });
+  }>({ ...defaultForm });
 
   const form_data_rules = ref({
     name: [
@@ -169,20 +174,47 @@
   });
 
   const formSubmit = () => {
-    formRef.value.validate((errors) => {
+    formRef.value.validate(async (errors) => {
       if (!errors) {
-        console.log('form_data', form_data.value);
+        if (form_data.value.id && form_data.value.id >= 1) {
+          await modify(form_data.value);
+        } else {
+          await create(form_data.value);
+        }
+        message.success('保存成功');
+        showModal.value = false;
+        emit('onClose');
       } else {
         message.error('请检查表单填写是否正确');
       }
     });
   };
 
-  const openModal = (id: any) => {
-    // TODO: 获取详情
-    form_data.value.id = id;
-    console.log('app id', id);
+  const fetchDeptList = async () => {
+    const { data } = await getDeptTree(0);
+    deptList.value = data;
+  };
+
+  const fetchPostList = async () => {
+    const { data } = await getPostOptions();
+    postList.value = data;
+  };
+
+  const fetchRoleList = async () => {
+    const { data } = await getRoleOptions();
+    roleList.value = data;
+  };
+  const openModal = async (id: any) => {
     showModal.value = true;
+    await fetchDeptList();
+    await fetchPostList();
+    await fetchRoleList();
+    if (id && id >= 1) {
+      const { data } = await detail(id);
+      form_data.value = Object.assign({}, form_data.value, data);
+    } else {
+      form_data.value = Object.assign({}, { ...defaultForm });
+    }
   };
 
   defineExpose({

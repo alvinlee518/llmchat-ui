@@ -15,15 +15,15 @@
             </n-form-item>
           </n-gi>
           <n-gi>
-            <n-form-item label="是否隐藏" path="status">
-              <n-select v-model:value="searchForm.hidden" clearable :options="BooleanOptions" />
+            <n-form-item label="状态" path="status">
+              <n-select v-model:value="searchForm.status" clearable :options="RowStateOptions" />
             </n-form-item>
           </n-gi>
           <n-gi />
           <n-gi>
             <n-space justify="end">
               <n-button @click="onSearch"> 查询 </n-button>
-              <n-button type="info" @click="onCreate"> 新增 </n-button>
+              <n-button type="info" @click="onCreate(0)"> 新增 </n-button>
             </n-space>
           </n-gi>
         </n-grid>
@@ -31,35 +31,39 @@
     </n-card>
     <n-card :bordered="false" class="mt-2">
       <n-data-table
+        remote
         :bordered="false"
         :columns="columns"
         :data="dataList"
+        :cascade="false"
         :row-key="(row) => row.id"
         :pagination="pagination"
         @load="onLoad"
       />
     </n-card>
-    <CreateModal ref="createModalRef" />
+    <CreateModal ref="createModalRef" @on-close="onSearch" />
   </div>
 </template>
 
 <script setup lang="ts">
   import { h, onMounted, reactive, ref } from 'vue';
   import { NText, NButton, NDivider, NPopconfirm } from 'naive-ui';
-  import { BooleanOptions, findBooleanLabel, findMenuTypeLabel } from '@/utils/optionsUtil';
+  import { RowStateOptions, findBooleanLabel, findMenuTypeLabel } from '@/utils/optionsUtil';
+  import { queryPage, remove } from '@/api/system/menu';
   import CreateModal from './component/CreateModal.vue';
   const createModalRef: any = ref(null);
   const dataList = ref<any[]>([]);
   const searchForm = ref<{
     name: string;
-    hidden: number;
+    status?: number;
     page: number;
-    pageSize: number;
+    size: number;
+    parentId: number;
   }>({
     page: 1,
-    pageSize: 10,
+    size: 10,
     name: '',
-    hidden: -1,
+    parentId: 0,
   });
 
   const columns = [
@@ -80,7 +84,7 @@
     {
       title: '菜单类型',
       key: 'menuType',
-      width: 100,
+      width: 80,
       render(row) {
         return h(
           NText,
@@ -94,7 +98,7 @@
     {
       title: '是否隐藏',
       key: 'hidden',
-      width: 100,
+      width: 80,
       render(row) {
         return h(
           NText,
@@ -106,6 +110,11 @@
       },
     },
     {
+      title: '排序',
+      key: 'sorting',
+      width: 60,
+    },
+    {
       title: '更新时间',
       key: 'updateAt',
       width: 180,
@@ -113,7 +122,7 @@
     {
       title: '操作',
       key: 'actions',
-      width: 180,
+      width: 160,
       render(row) {
         return [
           h(
@@ -164,7 +173,7 @@
   const pagination = reactive({
     page: 1,
     pageSize: 10,
-    pageCount: 1,
+    itemCount: 1,
     onChange: async (page: number) => {
       pagination.page = page;
       await fetchData();
@@ -179,29 +188,45 @@
     createModalRef.value.openModal(null, parentId);
   };
 
-  const onRemove = (id: any) => {
-    console.log('handleDelete');
-  };
-
   const onLoad = (row: any) => {
-    return new Promise<void>((resolve) => {
-      row.children = [{ id: new Date().getTime(), name: `${row.name}-1` }];
+    return new Promise<void>(async (resolve) => {
+      const { data } = await queryPage(
+        Object.assign(
+          { ...searchForm.value },
+          {
+            page: 1,
+            size: 100,
+            parentId: row.id,
+          }
+        )
+      );
+      data &&
+        data.forEach((item) => {
+          item.isLeaf = false;
+        });
+      row.children = data;
       resolve();
     });
   };
-  const fetchData = () => {
-    dataList.value = [
-      {
-        id: 1728366909514,
-        name: '应用名称',
-        description:
-          '这是应用的描述这是应用的描述这是应用的描述这是应用的描述这是应用的描述这是应用的描述这是应用的描述这是应用的描述这是应用的描述',
-        total: 1,
-        updateAt: '2024-10-08 10:57:23',
-        isLeaf: false,
-      },
-    ];
+
+  const onRemove = async (id: any) => {
+    await remove(id);
+    await onSearch();
   };
+
+  const fetchData = async () => {
+    const { data, total, page } = await queryPage(
+      Object.assign(searchForm.value, { page: pagination.page, size: pagination.pageSize })
+    );
+    data &&
+      data.forEach((item) => {
+        item.isLeaf = false;
+      });
+    dataList.value = data;
+    pagination.page = page;
+    pagination.itemCount = total;
+  };
+
   const onSearch = async () => {
     searchForm.value.page = 1;
     await fetchData();

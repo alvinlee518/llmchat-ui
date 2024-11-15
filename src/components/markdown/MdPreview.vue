@@ -1,5 +1,13 @@
 <template>
-  <MdPreview noIconfont noPrettier :codeFoldable="false" v-bind="$attrs" />
+  <MdPreview
+    noIconfont
+    noPrettier
+    htmlPreview
+    :codeFoldable="false"
+    previewTheme="cyanosis"
+    codeTheme="cyanosis"
+    v-bind="$attrs"
+  />
 </template>
 
 <script setup lang="ts">

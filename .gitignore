@@ -25,3 +25,4 @@ pnpm-debug.log*
 *.sw?
 /components.d.ts
 /components.d.ts
+pnpm-lock.yaml

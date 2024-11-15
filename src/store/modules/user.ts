@@ -3,14 +3,8 @@ import { store } from '@/store';
 import { ACCESS_TOKEN, CURRENT_USER, IS_SCREENLOCKED } from '@/store/mutation-types';
 import { ResultEnum } from '@/enums/httpEnum';
 
-import { getUserInfo as getUserInfoApi, login } from '@/api/system/user';
+import { getUserInfo as getUserInfoApi, login, logout as logoutApi } from '@/api/system/account';
 import { storage } from '@/utils/Storage';
-
-export type UserInfoType = {
-  // TODO: add your own data
-  username: string;
-  email: string;
-};
 
 export interface IUserState {
   token: string;
@@ -18,7 +12,7 @@ export interface IUserState {
   welcome: string;
   avatar: string;
   permissions: any[];
-  info: UserInfoType;
+  info: any;
 }
 
 export const useUserStore = defineStore({
@@ -44,7 +38,7 @@ export const useUserStore = defineStore({
     getPermissions(): [any][] {
       return this.permissions;
     },
-    getUserInfo(): UserInfoType {
+    getUserInfo(): any {
       return this.info;
     },
   },
@@ -58,37 +52,33 @@ export const useUserStore = defineStore({
     setPermissions(permissions) {
       this.permissions = permissions;
     },
-    setUserInfo(info: UserInfoType) {
+    setUserInfo(info: any) {
       this.info = info;
     },
     // 登录
     async login(params: any) {
+      this.setToken('');
       const response = await login(params);
-      const { result, code } = response;
+      const { data, code } = response;
       if (code === ResultEnum.SUCCESS) {
         const ex = 7 * 24 * 60 * 60;
-        storage.set(ACCESS_TOKEN, result.token, ex);
-        storage.set(CURRENT_USER, result, ex);
+        storage.set(ACCESS_TOKEN, data, ex);
         storage.set(IS_SCREENLOCKED, false);
-        this.setToken(result.token);
-        this.setUserInfo(result);
+        this.setToken(data);
       }
       return response;
     },
 
     // 获取用户信息
     async getInfo() {
-      const data = await getUserInfoApi();
-      const { result } = data;
-      if (result.permissions && result.permissions.length) {
-        const permissionsList = result.permissions;
+      const { data } = await getUserInfoApi();
+      if (data.permissions && data.permissions.length) {
+        const permissionsList = data.permissions;
         this.setPermissions(permissionsList);
-        this.setUserInfo(result);
-      } else {
-        throw new Error('getInfo: permissionsList must be a non-null array !');
       }
-      this.setAvatar(result.avatar);
-      return result;
+      this.setUserInfo(data.user);
+      // this.setAvatar(result.avatar);
+      return data;
     },
 
     // 登出
@@ -97,6 +87,7 @@ export const useUserStore = defineStore({
       this.setUserInfo({ username: '', email: '' });
       storage.remove(ACCESS_TOKEN);
       storage.remove(CURRENT_USER);
+      await logoutApi();
     },
   },
 });

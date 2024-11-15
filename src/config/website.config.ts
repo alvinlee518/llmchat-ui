@@ -5,5 +5,5 @@ export const websiteConfig = Object.freeze({
   title: 'LLMChat',
   logo: logoImage,
   loginImage: loginImage,
-  loginDesc: 'Java生态下企业级AIGC项目解决方案',
+  loginDesc: '基于LLM、LangChain实现的企业级AIGC项目解决方案',
 });

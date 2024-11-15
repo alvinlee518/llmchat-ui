@@ -23,7 +23,7 @@
           <n-gi>
             <n-space justify="end">
               <n-button @click="onSearch"> 查询 </n-button>
-              <n-button type="info" @click="onCreate"> 新增 </n-button>
+              <n-button type="info" @click="onCreate(0)"> 新增 </n-button>
             </n-space>
           </n-gi>
         </n-grid>
@@ -31,6 +31,8 @@
     </n-card>
     <n-card :bordered="false" class="mt-2">
       <n-data-table
+        remote
+        :cascade="false"
         :bordered="false"
         :columns="columns"
         :data="dataList"
@@ -39,7 +41,7 @@
         @load="onLoad"
       />
     </n-card>
-    <CreateModal ref="createModalRef" />
+    <CreateModal ref="createModalRef" @on-close="onSearch" />
   </div>
 </template>
 
@@ -47,19 +49,22 @@
   import { h, onMounted, reactive, ref } from 'vue';
   import { NText, NButton, NDivider, NPopconfirm } from 'naive-ui';
   import { RowStateOptions, findRowStateLabel } from '@/utils/optionsUtil';
+  import { queryPage, remove } from '@/api/system/dept';
   import CreateModal from './component/CreateModal.vue';
   const createModalRef: any = ref(null);
   const dataList = ref<any[]>([]);
   const searchForm = ref<{
     name: string;
     status: number;
+    parentId: number;
     page: number;
-    pageSize: number;
+    size: number;
   }>({
     page: 1,
-    pageSize: 10,
+    size: 10,
     name: '',
     status: 1,
+    parentId: 0,
   });
 
   const columns = [
@@ -69,7 +74,7 @@
     },
     {
       title: '部门编码',
-      key: 'value',
+      key: 'code',
       width: 180,
     },
     {
@@ -150,7 +155,7 @@
   const pagination = reactive({
     page: 1,
     pageSize: 10,
-    pageCount: 1,
+    itemCount: 1,
     onChange: async (page: number) => {
       pagination.page = page;
       await fetchData();
@@ -165,29 +170,45 @@
     createModalRef.value.openModal(null, parentId);
   };
 
-  const onRemove = (id: any) => {
-    console.log('handleDelete');
-  };
-
   const onLoad = (row: any) => {
-    return new Promise<void>((resolve) => {
-      row.children = [{ id: new Date().getTime(), name: `${row.name}-1` }];
+    return new Promise<void>(async (resolve) => {
+      const { data } = await queryPage(
+        Object.assign(
+          { ...searchForm.value },
+          {
+            page: 1,
+            size: 100,
+            parentId: row.id,
+          }
+        )
+      );
+      data &&
+        data.forEach((item) => {
+          item.isLeaf = false;
+        });
+      row.children = data;
       resolve();
     });
   };
-  const fetchData = () => {
-    dataList.value = [
-      {
-        id: 1728366909514,
-        name: '应用名称',
-        description:
-          '这是应用的描述这是应用的描述这是应用的描述这是应用的描述这是应用的描述这是应用的描述这是应用的描述这是应用的描述这是应用的描述',
-        total: 1,
-        updateAt: '2024-10-08 10:57:23',
-        isLeaf: false,
-      },
-    ];
+
+  const onRemove = async (id: any) => {
+    await remove(id);
+    await onSearch();
   };
+
+  const fetchData = async () => {
+    const { data, total, page } = await queryPage(
+      Object.assign({ ...searchForm.value }, { page: pagination.page, size: pagination.pageSize })
+    );
+    data &&
+      data.forEach((item) => {
+        item.isLeaf = false;
+      });
+    dataList.value = data;
+    pagination.page = page;
+    pagination.itemCount = total;
+  };
+
   const onSearch = async () => {
     searchForm.value.page = 1;
     await fetchData();

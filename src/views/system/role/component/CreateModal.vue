@@ -19,8 +19,8 @@
       <n-form-item path="name" label="角色名称">
         <n-input v-model:value="form_data.name" maxlength="64" show-count />
       </n-form-item>
-      <n-form-item path="value" label="角色编码">
-        <n-input v-model:value="form_data.value" maxlength="64" show-count />
+      <n-form-item path="code" label="角色编码">
+        <n-input v-model:value="form_data.code" maxlength="64" show-count />
       </n-form-item>
       <n-form-item path="remark" label="备注">
         <n-input
@@ -44,19 +44,22 @@
 <script setup lang="ts">
   import { ref } from 'vue';
   import { useMessage } from 'naive-ui';
+  import { create, modify, detail } from '@/api/system/role';
+  const emit = defineEmits(['onClose']);
   const message = useMessage();
   const showModal = ref<boolean>(false);
   const formRef: any = ref(null);
+  const defaultForm = {
+    name: '',
+    remark: '',
+    code: '',
+  };
   const form_data = ref<{
     id?: number;
     name: string;
-    value: string;
+    code: string;
     remark: string;
-  }>({
-    name: '',
-    remark: '',
-    value: '',
-  });
+  }>({ ...defaultForm });
 
   const form_data_rules = ref({
     name: [
@@ -66,23 +69,39 @@
         trigger: 'blur',
       },
     ],
+    code: [
+      {
+        required: true,
+        message: '请输入角色编码',
+        trigger: 'blur',
+      },
+    ],
   });
 
   const formSubmit = () => {
-    formRef.value.validate((errors) => {
+    formRef.value.validate(async (errors) => {
       if (!errors) {
-        console.log('form_data', form_data.value);
+        if (form_data.value.id && form_data.value.id >= 1) {
+          await modify(form_data.value);
+        } else {
+          await create(form_data.value);
+        }
+        showModal.value = false;
+        emit('onClose');
       } else {
         message.error('请检查表单填写是否正确');
       }
     });
   };
 
-  const openModal = (id: any) => {
-    // TODO: 获取详情
-    form_data.value.id = id;
-    console.log('app id', id);
+  const openModal = async (id: any) => {
     showModal.value = true;
+    if (id && id >= 1) {
+      const { data } = await detail(id);
+      form_data.value = Object.assign({}, form_data.value, data);
+    } else {
+      form_data.value = Object.assign({}, { ...defaultForm });
+    }
   };
 
   defineExpose({

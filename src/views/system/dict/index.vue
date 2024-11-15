@@ -38,6 +38,7 @@
     </n-card>
     <n-card :bordered="false" class="mt-2">
       <n-data-table
+        remote
         :bordered="false"
         :columns="columns"
         :data="dataList"
@@ -46,7 +47,7 @@
         @update:checked-row-keys="(ids) => (checkedList = ids)"
       />
     </n-card>
-    <CreateModal ref="createModalRef" />
+    <CreateModal ref="createModalRef" @on-close="onSearch" />
   </div>
 </template>
 
@@ -55,6 +56,7 @@
   import { NText, NButton, NDivider, NPopconfirm } from 'naive-ui';
   import { useRouter } from 'vue-router';
   import { RowStateOptions, findRowStateLabel } from '@/utils/optionsUtil';
+  import { queryPage, remove } from '@/api/system/dict';
   import CreateModal from './component/CreateModal.vue';
   const createModalRef: any = ref(null);
   const checkedList = ref<any[]>([]);
@@ -63,12 +65,14 @@
     name: string;
     status: number;
     page: number;
-    pageSize: number;
+    size: number;
+    parentId: number;
   }>({
     page: 1,
-    pageSize: 10,
+    size: 10,
     name: '',
     status: 1,
+    parentId: 0,
   });
 
   const router = useRouter();
@@ -83,7 +87,7 @@
     },
     {
       title: '字典编码',
-      key: 'value',
+      key: 'code',
     },
     {
       title: '排序',
@@ -163,14 +167,14 @@
   const pagination = reactive({
     page: 1,
     pageSize: 10,
-    pageCount: 1,
+    itemCount: 1,
     onChange: async (page: number) => {
       pagination.page = page;
       await fetchData();
     },
   });
   function onPreview(id: any) {
-    router.push({ name: 'dict_list', params: { id: id } });
+    router.push({ name: 'dict_data', params: { id: id } });
   }
 
   const onModify = (id: any) => {
@@ -181,24 +185,26 @@
     createModalRef.value.openModal();
   };
 
-  const onRemove = (id: any) => {
-    console.log('handleDelete');
+  const onRemove = async (id: any) => {
+    await remove(id);
+    await onSearch();
   };
 
-  const onBatchRemove = () => {};
-
-  const fetchData = () => {
-    dataList.value = [
-      {
-        id: 1728366909514,
-        name: '应用名称',
-        description:
-          '这是应用的描述这是应用的描述这是应用的描述这是应用的描述这是应用的描述这是应用的描述这是应用的描述这是应用的描述这是应用的描述',
-        total: 1,
-        updateAt: '2024-10-08 10:57:23',
-      },
-    ];
+  const onBatchRemove = async () => {
+    await remove(checkedList.value);
+    await onSearch();
+    checkedList.value = [];
   };
+
+  const fetchData = async () => {
+    const { data, total, page } = await queryPage(
+      Object.assign(searchForm.value, { page: pagination.page, size: pagination.pageSize })
+    );
+    dataList.value = data;
+    pagination.page = page;
+    pagination.itemCount = total;
+  };
+
   const onSearch = async () => {
     searchForm.value.page = 1;
     await fetchData();

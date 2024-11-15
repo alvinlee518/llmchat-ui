@@ -38,6 +38,7 @@
     </n-card>
     <n-card :bordered="false" class="mt-2">
       <n-data-table
+        remote
         :bordered="false"
         :columns="columns"
         :data="dataList"
@@ -46,9 +47,9 @@
         @update:checked-row-keys="(ids) => (checkedList = ids)"
       />
     </n-card>
-    <CreateModal ref="createModalRef" />
+    <CreateModal ref="createModalRef" @on-close="onSearch" />
     <MenuScopeModal ref="menuScopeModalRef" />
-    <DataScopeModal ref="dataScopeModalRef" />
+    <DataScopeModal ref="dataScopeModalRef" @on-close="onSearch" />
     <UserScopeModal ref="userScopeModalRef" />
   </div>
 </template>
@@ -56,8 +57,8 @@
 <script setup lang="ts">
   import { h, onMounted, reactive, ref } from 'vue';
   import { NText, NButton, NDivider, NPopconfirm, NDropdown } from 'naive-ui';
-  import { useRouter } from 'vue-router';
   import { RowStateOptions, findDataScopeLabel, findRowStateLabel } from '@/utils/optionsUtil';
+  import { queryPage, remove } from '@/api/system/role';
   import CreateModal from './component/CreateModal.vue';
   import MenuScopeModal from './component/MenuScopeModal.vue';
   import DataScopeModal from './component/DataScopeModal.vue';
@@ -72,15 +73,13 @@
     name: string;
     status: number;
     page: number;
-    pageSize: number;
+    size: number;
   }>({
     page: 1,
-    pageSize: 10,
+    size: 10,
     name: '',
     status: 1,
   });
-
-  const router = useRouter();
 
   const columns = [
     {
@@ -92,7 +91,7 @@
     },
     {
       title: '角色编码',
-      key: 'value',
+      key: 'code',
     },
     {
       title: '数据权限',
@@ -207,15 +206,12 @@
   const pagination = reactive({
     page: 1,
     pageSize: 10,
-    pageCount: 1,
+    itemCount: 1,
     onChange: async (page: number) => {
       pagination.page = page;
       await fetchData();
     },
   });
-  function onPreview(id: any) {
-    router.push({ name: 'dict_list', params: { id: id } });
-  }
 
   const onModify = (id: any) => {
     createModalRef.value.openModal(id);
@@ -225,24 +221,26 @@
     createModalRef.value.openModal();
   };
 
-  const onRemove = (id: any) => {
-    console.log('handleDelete');
+  const onRemove = async (id: any) => {
+    await remove(id);
+    await onSearch();
   };
 
-  const onBatchRemove = () => {};
-
-  const fetchData = () => {
-    dataList.value = [
-      {
-        id: 1728366909514,
-        name: '应用名称',
-        description:
-          '这是应用的描述这是应用的描述这是应用的描述这是应用的描述这是应用的描述这是应用的描述这是应用的描述这是应用的描述这是应用的描述',
-        total: 1,
-        updateAt: '2024-10-08 10:57:23',
-      },
-    ];
+  const onBatchRemove = async () => {
+    await remove(checkedList.value);
+    await onSearch();
+    checkedList.value = [];
   };
+
+  const fetchData = async () => {
+    const { data, total, page } = await queryPage(
+      Object.assign(searchForm.value, { page: pagination.page, size: pagination.pageSize })
+    );
+    dataList.value = data;
+    pagination.page = page;
+    pagination.itemCount = total;
+  };
+
   const onSearch = async () => {
     searchForm.value.page = 1;
     await fetchData();

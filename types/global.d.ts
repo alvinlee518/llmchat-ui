@@ -33,7 +33,7 @@ declare global {
   declare interface InResult<T = any> {
     code: number;
     message: string;
-    result: T;
+    data: T;
   }
 
   declare type Nullable<T> = T | null;

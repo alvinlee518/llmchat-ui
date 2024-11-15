@@ -7,7 +7,7 @@
     content-class="px-16"
   >
     <template #header>
-      {{ `${form_data && form_data.id && form_data.id >= 1 ? '编辑' : '添加'}字典` }}
+      {{ `${form_data && form_data.id && form_data.id >= 1 ? '编辑' : '添加'}字典类型` }}
     </template>
     <n-form
       label-width="80px"
@@ -19,8 +19,8 @@
       <n-form-item path="name" label="字典名称">
         <n-input v-model:value="form_data.name" maxlength="64" show-count />
       </n-form-item>
-      <n-form-item path="value" label="字典编码">
-        <n-input v-model:value="form_data.value" maxlength="64" show-count />
+      <n-form-item path="code" label="字典编码">
+        <n-input v-model:value="form_data.code" maxlength="64" show-count />
       </n-form-item>
       <n-form-item path="sorting" label="排序">
         <n-input-number class="w-full" v-model:value="form_data.sorting" clearable />
@@ -48,21 +48,25 @@
   import { ref } from 'vue';
   import { useMessage } from 'naive-ui';
 
+  import { create, modify, detail } from '@/api/system/dict';
+  const emit = defineEmits(['onClose']);
+
   const message = useMessage();
   const showModal = ref<boolean>(false);
   const formRef: any = ref(null);
+  const defaultForm = {
+    name: '',
+    remark: '',
+    code: '',
+    sorting: 0,
+  };
   const form_data = ref<{
     id?: number;
     name: string;
-    value: string;
+    code: string;
     sorting: number;
     remark: string;
-  }>({
-    name: '',
-    remark: '',
-    value: '',
-    sorting: 0,
-  });
+  }>({ ...defaultForm });
 
   const form_data_rules = ref({
     name: [
@@ -72,23 +76,39 @@
         trigger: 'blur',
       },
     ],
+    code: [
+      {
+        required: true,
+        message: '请输入字典编码',
+        trigger: 'blur',
+      },
+    ],
   });
 
   const formSubmit = () => {
-    formRef.value.validate((errors) => {
+    formRef.value.validate(async (errors) => {
       if (!errors) {
-        console.log('form_data', form_data.value);
+        if (form_data.value.id && form_data.value.id >= 1) {
+          await modify(form_data.value);
+        } else {
+          await create(form_data.value);
+        }
+        showModal.value = false;
+        emit('onClose');
       } else {
         message.error('请检查表单填写是否正确');
       }
     });
   };
 
-  const openModal = (id: any) => {
-    // TODO: 获取详情
-    form_data.value.id = id;
-    console.log('app id', id);
+  const openModal = async (id: any) => {
     showModal.value = true;
+    if (id && id >= 1) {
+      const { data } = await detail(id);
+      form_data.value = Object.assign({}, form_data.value, data);
+    } else {
+      form_data.value = Object.assign({}, { ...defaultForm });
+    }
   };
 
   defineExpose({

@@ -8,6 +8,12 @@
     content-class="px-16"
   >
     <n-form ref="formRef" :model="form_data">
+      <n-form-item path="name" label="角色名称">
+        <n-input disabled v-model:value="form_data.name" maxlength="64" show-count />
+      </n-form-item>
+      <n-form-item path="code" label="角色编码">
+        <n-input disabled v-model:value="form_data.code" maxlength="64" show-count />
+      </n-form-item>
       <n-form-item path="menuIds">
         <template #label>
           <n-flex class="w-80" align="center" justify="space-between">
@@ -19,7 +25,7 @@
                 @update:checked="
                   (checked) => {
                     if (checked) {
-                      form_data.menuIds = getTreeAll(treeData);
+                      form_data.menuIds = getTreeAll(menuList);
                     } else {
                       form_data.menuIds = [];
                     }
@@ -37,13 +43,16 @@
           cascade
           checkable
           expand-on-click
+          label-field="label"
+          key-field="value"
+          children-field="children"
           :virtual-scroll="true"
           :checked-keys="form_data.menuIds"
           :default-expand-all="expanded"
-          :data="treeData"
+          :data="menuList"
           @update:checked-keys="
             (checked) => {
-              form_data.menuIds = [form_data.menuIds, ...checked];
+              form_data.menuIds = [...checked];
             }
           "
         />
@@ -60,64 +69,42 @@
 
 <script setup lang="ts">
   import { ref } from 'vue';
-  import { useMessage } from 'naive-ui';
   import { getTreeAll } from '@/utils';
-  const message = useMessage();
+  import { saveMenuScope, getMenuScope } from '@/api/system/role';
+  import { getMenuTree } from '@/api/system/menu';
+  const emit = defineEmits(['onClose']);
   const showModal = ref<boolean>(false);
   const formRef: any = ref(null);
+  const defaultForm = {
+    menuIds: [],
+    name: '',
+    code: '',
+  };
   const form_data = ref<{
     id?: number;
+    name: string;
+    code: string;
     menuIds: number[];
-  }>({
-    menuIds: [],
-  });
+  }>({ ...defaultForm });
   const checkedAll = ref<boolean>(false);
   const expanded = ref<boolean>(false);
-  const treeData = ref<any[]>([]);
-  const fetchTreeData = () => {
-    treeData.value = [
-      {
-        label: 'Dashboard',
-        key: 1729048848368,
-        children: [
-          {
-            label: '主控台',
-            key: 1729048848367,
-          },
-          {
-            label: '工作台',
-            key: 1729048848366,
-          },
-        ],
-      },
-      {
-        label: '表单管理',
-        key: 1729048848365,
-        children: [
-          {
-            label: '基础表单',
-            key: 1729048848364,
-          },
-          {
-            label: '分步表单',
-            key: 1729048848363,
-          },
-          {
-            label: '表单详情',
-            key: 1729048848362,
-          },
-        ],
-      },
-    ];
+
+  const menuList = ref<any[]>([]);
+  const fetchmenuList = async () => {
+    const { data } = await getMenuTree(0);
+    menuList.value = data;
   };
-  const formSubmit = () => {};
+  const formSubmit = async () => {
+    await saveMenuScope(form_data.value);
+    showModal.value = false;
+    emit('onClose');
+  };
 
   const openModal = async (id: any) => {
-    await fetchTreeData();
-    // TODO: 获取详情
-    form_data.value.id = id;
-    console.log('app id', id);
     showModal.value = true;
+    await fetchmenuList();
+    const { data } = await getMenuScope(id);
+    form_data.value = Object.assign({}, form_data.value, data);
   };
 
   defineExpose({

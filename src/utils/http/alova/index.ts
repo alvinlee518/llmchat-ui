@@ -3,7 +3,6 @@ import VueHook from 'alova/vue';
 import adapterFetch from 'alova/fetch';
 import { createAlovaMockAdapter } from '@alova/mock';
 import { isString } from 'lodash-es';
-import mocks from './mocks';
 import { useUser } from '@/store/modules/user';
 import { storage } from '@/utils/Storage';
 import { useGlobSetting } from '@/hooks/setting';
@@ -13,7 +12,7 @@ import { isUrl } from '@/utils';
 
 const { useMock, apiUrl, urlPrefix, loggerMock } = useGlobSetting();
 
-const mockAdapter = createAlovaMockAdapter([...mocks], {
+const mockAdapter = createAlovaMockAdapter([], {
   // 全局控制是否启用mock接口，默认为true
   enable: useMock,
 
@@ -38,7 +37,7 @@ export const Alova = createAlova({
   baseURL: apiUrl,
   statesHook: VueHook,
   // 关闭全局请求缓存
-  // cacheFor: null,
+  cacheFor: null,
   // 全局缓存配置
   // cacheFor: {
   //   POST: {
@@ -59,7 +58,7 @@ export const Alova = createAlova({
     const token = userStore.getToken;
     // 添加 token 到请求头
     if (!method.meta?.ignoreToken && token) {
-      method.config.headers['token'] = token;
+      method.config.headers['Authorization'] = token;
     }
     // 处理 api 请求前缀
     const isUrlStr = isUrl(method.url as string);
@@ -69,9 +68,20 @@ export const Alova = createAlova({
     if (!isUrlStr && apiUrl && isString(apiUrl)) {
       method.url = `${apiUrl}${method.url}`;
     }
+    if (method.config.params) {
+      method.config.params = Object.fromEntries(
+        Object.entries(method.config.params).filter(([_, v]) => v != null)
+      );
+    }
   },
   responded: {
     onSuccess: async (response, method) => {
+      // @ts-ignore
+      const Message = window.$message;
+      if (!response.ok) {
+        Message?.error(response.statusText);
+        throw new Error(response.statusText);
+      }
       const res = (response.json && (await response.json())) || response.body;
 
       // 是否返回原生响应头 比如：需要获取响应头时使用该属性
@@ -79,32 +89,29 @@ export const Alova = createAlova({
         return res;
       }
       // 请根据自身情况修改数据结构
-      const { message, code, result } = res;
+      const { message, code } = res;
 
       // 不进行任何处理，直接返回
       // 用于需要直接获取 code、result、 message 这些信息时开启
       if (method.meta?.isTransformResponse === false) {
         return res.data;
       }
-
-      // @ts-ignore
-      const Message = window.$message;
       // @ts-ignore
       const Modal = window.$dialog;
 
       const LoginPath = PageEnum.BASE_LOGIN;
       if (ResultEnum.SUCCESS === code) {
-        return result;
+        return res;
       }
       // 需要登录
-      if (code === 912) {
+      if (code === 401) {
         Modal?.warning({
           title: '提示',
           content: '登录身份已失效，请重新登录!',
-          okText: '确定',
+          positiveText: '确定',
           closable: false,
           maskClosable: false,
-          onOk: async () => {
+          onPositiveClick: async () => {
             storage.clear();
             window.location.href = LoginPath;
           },

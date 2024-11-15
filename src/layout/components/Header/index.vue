@@ -47,7 +47,7 @@
           :key="routeItem.name === 'Redirect' ? void 0 : routeItem.name"
         >
           <n-breadcrumb-item v-if="routeItem.meta.title">
-            <n-dropdown
+            <!-- <n-dropdown
               v-if="routeItem.children.length"
               :options="routeItem.children"
               @select="dropdownSelect"
@@ -59,8 +59,8 @@
                 />
                 {{ routeItem.meta.title }}
               </span>
-            </n-dropdown>
-            <span class="link-text" v-else>
+            </n-dropdown> -->
+            <span class="link-text">
               <component
                 v-if="crumbsSetting.showIcon && routeItem.meta.icon"
                 :is="routeItem.meta.icon"
@@ -112,7 +112,7 @@
         </n-dropdown>
       </div>
       <!--设置-->
-      <div class="layout-header-trigger layout-header-trigger-min" @click="openSetting">
+      <!-- <div class="layout-header-trigger layout-header-trigger-min" @click="openSetting">
         <n-tooltip placement="bottom-end">
           <template #trigger>
             <n-icon size="18" style="font-weight: bold">
@@ -121,11 +121,11 @@
           </template>
           <span>项目配置</span>
         </n-tooltip>
-      </div>
+      </div> -->
     </div>
   </div>
   <!--项目配置-->
-  <ProjectSetting ref="drawerSetting" />
+  <!-- <ProjectSetting ref="drawerSetting" /> -->
 </template>
 
 <script lang="ts">
@@ -306,7 +306,7 @@
       const avatarSelect = (key) => {
         switch (key) {
           case 1:
-            router.push({ name: 'Setting' });
+            router.push({ name: 'user_profile' });
             break;
           case 2:
             doLogout();

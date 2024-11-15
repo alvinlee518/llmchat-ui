@@ -5,7 +5,7 @@
         <n-card :bordered="false">
           <template #header> 组织架构 </template>
           <template #header-extra>
-            <n-button text @click="fetchTreeData">
+            <n-button text @click="fetchdeptList">
               <n-icon>
                 <RefreshOutline />
               </n-icon>
@@ -16,11 +16,15 @@
             block-line
             cascade
             virtual-scroll
+            label-field="label"
+            key-field="value"
+            children-field="children"
             :selected-keys="[searchForm.deptId]"
             default-expand-all
-            :data="treeData"
+            :data="deptList"
             @update:selected-keys="
               (checked) => {
+                console.log(checked);
                 if (checked && checked.length >= 1) {
                   searchForm.deptId = checked[0];
                 }
@@ -83,6 +87,7 @@
         </n-card>
         <n-card :bordered="false" class="mt-2">
           <n-data-table
+            remote
             :bordered="false"
             :columns="columns"
             :data="dataList"
@@ -93,7 +98,7 @@
         </n-card>
       </n-gi>
     </n-grid>
-    <CreateModal ref="createModalRef" />
+    <CreateModal ref="createModalRef" @on-close="onSearch" />
   </div>
 </template>
 
@@ -102,7 +107,9 @@
   import { NText, NButton, NDivider, NPopconfirm } from 'naive-ui';
   import { RefreshOutline } from '@vicons/ionicons5';
   import { RowStateOptions, findRowStateLabel } from '@/utils/optionsUtil';
+  import { queryPage, remove } from '@/api/system/user';
   import CreateModal from './component/CreateModal.vue';
+  import { getDeptTree } from '@/api/system/dept';
   const createModalRef: any = ref(null);
   const checkedList = ref<any[]>([]);
   const dataList = ref<any[]>([]);
@@ -114,10 +121,10 @@
     deptId: number;
     status: number;
     page: number;
-    pageSize: number;
+    size: number;
   }>({
     page: 1,
-    pageSize: 10,
+    size: 10,
     name: '',
     status: 1,
     email: '',
@@ -126,45 +133,11 @@
     deptId: 0,
   });
 
-  const treeData = ref<any[]>([]);
+  const deptList = ref<any[]>([]);
 
-  const fetchTreeData = () => {
-    treeData.value = [
-      {
-        label: '总公司',
-        key: 1729048848368,
-        children: [
-          {
-            label: '北京分公司',
-            key: 1729048848367,
-            children: [
-              {
-                label: '研发部门',
-                key: 1729048848364,
-              },
-              {
-                label: '产品部门',
-                key: 1729048848363,
-              },
-            ],
-          },
-          {
-            label: '上海分公司',
-            key: 1729048848366,
-            children: [
-              {
-                label: '运营部门',
-                key: 1729048848362,
-              },
-              {
-                label: '销售部门',
-                key: 1729048848365,
-              },
-            ],
-          },
-        ],
-      },
-    ];
+  const fetchdeptList = async () => {
+    const { data } = await getDeptTree(0);
+    deptList.value = data;
   };
 
   const columns = [
@@ -255,7 +228,7 @@
   const pagination = reactive({
     page: 1,
     pageSize: 10,
-    pageCount: 1,
+    itemCount: 0,
     onChange: async (page: number) => {
       pagination.page = page;
       await fetchData();
@@ -270,31 +243,31 @@
     createModalRef.value.openModal();
   };
 
-  const onRemove = (id: any) => {
-    console.log('handleDelete');
+  const onRemove = async (id: any) => {
+    await remove(id);
+    await onSearch();
   };
 
-  const onBatchRemove = () => {};
+  const onBatchRemove = async () => {
+    await remove(checkedList.value);
+    await onSearch();
+    checkedList.value = [];
+  };
 
-  const fetchData = () => {
-    dataList.value = [
-      {
-        id: 1728366909514,
-        name: '应用名称',
-        description:
-          '这是应用的描述这是应用的描述这是应用的描述这是应用的描述这是应用的描述这是应用的描述这是应用的描述这是应用的描述这是应用的描述',
-        total: 1,
-        updateAt: '2024-10-08 10:57:23',
-      },
-    ];
+  const fetchData = async () => {
+    const { data, total, page } = await queryPage(
+      Object.assign(searchForm.value, { page: pagination.page, size: pagination.pageSize })
+    );
+    dataList.value = [...data];
+    pagination.page = page;
+    pagination.itemCount = total;
   };
   const onSearch = async () => {
     searchForm.value.page = 1;
     await fetchData();
   };
-
   onMounted(() => {
-    fetchTreeData();
+    fetchdeptList();
     onSearch();
   });
 </script>
