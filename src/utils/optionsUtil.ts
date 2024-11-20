@@ -15,19 +15,19 @@ const findRowStateLabel = (value: number) => {
 
 const ParagraphStateOptions = [
   {
-    label: '待解析',
+    label: '待处理',
     value: 0,
   },
   {
-    label: '解析中',
+    label: '处理中',
     value: 1,
   },
   {
-    label: '解析完成',
+    label: '已结束',
     value: 2,
   },
   {
-    label: '解析失败',
+    label: '错误',
     value: 3,
   },
 ];

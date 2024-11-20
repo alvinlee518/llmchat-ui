@@ -15,7 +15,7 @@
           </n-gi>
           <n-gi :span="5">
             <n-select
-              v-model:value="searchForm.indexState"
+              v-model:value="searchForm.state"
               :options="ParagraphStateOptions"
               placeholder="选择解析状态"
               clearable
@@ -33,7 +33,7 @@
           <n-gi v-for="(item, idx) in dataList" :key="idx">
             <n-card size="small" class="w-full h-44" hoverable>
               <template #header>
-                <n-tooltip trigger="hover" v-if="item.indexState == 3">
+                <n-tooltip trigger="hover" v-if="item.state == 3">
                   <template #trigger>
                     <n-tag type="error">
                       # {{ item.position }}
@@ -47,7 +47,7 @@
                   {{ item.failure }}
                 </n-tooltip>
 
-                <n-tag type="success" v-else-if="item.indexState == 2">
+                <n-tag type="success" v-else-if="item.state == 2">
                   # {{ item.position }}
                   <template #icon>
                     <n-icon>
@@ -157,7 +157,7 @@
     page: number;
     size: number;
     docId: any;
-    indexState?: number;
+    state?: number;
   }>({
     keyword: '',
     page: 1,

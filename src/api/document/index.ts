@@ -6,6 +6,28 @@ export function queryPage(params) {
   return Alova.Get<any>(`/document/list`, { params });
 }
 
+export async function exportAll(id) {
+  await Alova.Get<any>(`/document/export/${id}`, {
+    meta: {
+      dataType: 'blob',
+      isReturnNativeResponse: true,
+    },
+    transform: (blob: Blob, headers) => {
+      const contentDisposition = headers.get('content-disposition');
+      const match = contentDisposition?.match(/filename\*?=(?:UTF-8'')?["']?([^"';\n]+)/i);
+      const filename = match ? decodeURIComponent(match[1]) : 'downloaded-file';
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+    },
+  });
+}
+
 export function remove(params) {
   return Alova.Delete<any>(`/document/${params}`);
 }
@@ -25,10 +47,14 @@ export async function create(data: any, fileList: File[]) {
   return await send(fileList);
 }
 
+export function modify(data) {
+  return Alova.Post<any>('/document/modify', data);
+}
+
 export function detail(id) {
   return Alova.Get<any>(`/document/${id}`);
 }
 
 export function reindex(id) {
-  return Alova.Put<any>(`/document/${id}`);
+  return Alova.Put<any>(`/document/reindex/${id}`);
 }

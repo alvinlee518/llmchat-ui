@@ -82,12 +82,18 @@ export const Alova = createAlova({
         Message?.error(response.statusText);
         throw new Error(response.statusText);
       }
+
+      if (method.meta?.dataType === 'blob') {
+        return response.blob();
+      }
+
       const res = (response.json && (await response.json())) || response.body;
 
       // 是否返回原生响应头 比如：需要获取响应头时使用该属性
       if (method.meta?.isReturnNativeResponse) {
         return res;
       }
+
       // 请根据自身情况修改数据结构
       const { message, code } = res;
 

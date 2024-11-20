@@ -15,7 +15,7 @@
           </n-gi>
           <n-gi :span="5">
             <n-select
-              v-model:value="searchForm.indexState"
+              v-model:value="searchForm.state"
               :options="ParagraphStateOptions"
               placeholder="选择解析状态"
               clearable
@@ -41,21 +41,30 @@
         :pagination="pagination"
       />
     </n-card>
+    <SplitModal ref="splitModalRef" @close="onSearch" />
   </div>
 </template>
 
 <script setup lang="ts">
-  import { NButton, NDivider, NPopconfirm, NPopover, NText } from 'naive-ui';
+  import { NButton, NDivider, NDropdown, NPopover, NText, useDialog, useMessage } from 'naive-ui';
   import { reactive, ref, h, onMounted } from 'vue';
   import { useRouter } from 'vue-router';
   import { ParagraphStateOptions, findParagraphStateLabel } from '@/utils/optionsUtil';
-  import { queryPage, remove, reindex } from '@/api/document';
+  import { queryPage, remove, reindex, exportAll } from '@/api/document';
+
+  import SplitModal from './component/SplitModal.vue';
+
+  const splitModalRef = ref<any>(null);
+
   const router = useRouter();
   const datasetId = router.currentRoute.value.params.id;
 
+  const dialog = useDialog();
+  const message = useMessage();
+
   const searchForm = ref<{
     name: string;
-    indexState?: number;
+    state?: number;
     datasetId: any;
   }>({
     name: '',
@@ -74,28 +83,42 @@
       width: 120,
     },
     {
-      title: '状态',
-      key: 'indexState',
+      title: '分段状态',
+      key: 'state',
       width: 120,
       render(row) {
         return h(
           NPopover,
           {
-            disabled: row.indexState !== 3,
+            disabled: row.state !== 3,
           },
           {
             trigger: () => {
               return h(
                 NText,
                 {
-                  type: row.indexState !== 3 ? 'info' : 'error',
+                  type: row.state !== 3 ? 'info' : 'error',
                 },
                 {
-                  default: () => findParagraphStateLabel(row.indexState),
+                  default: () => findParagraphStateLabel(row.state),
                 }
               );
             },
             default: () => row.failure,
+          }
+        );
+      },
+    },
+    {
+      title: '索引进度',
+      key: 'paraCount',
+      width: 120,
+      render(row) {
+        return h(
+          NText,
+          { type: 'primary' },
+          {
+            default: () => `${row.indexCount} / ${row.paraCount}`,
           }
         );
       },
@@ -112,30 +135,6 @@
       render(row) {
         return [
           h(
-            NPopconfirm,
-            {
-              onPositiveClick: async () => {
-                await reindex(row.id);
-                await onSearch();
-              },
-            },
-            {
-              trigger: () => {
-                return h(
-                  NButton,
-                  {
-                    text: true,
-                  },
-                  { default: () => '解析' }
-                );
-              },
-              default: () => {
-                return '确认重新解析次文档吗？';
-              },
-            }
-          ),
-          h(NDivider, { vertical: true }),
-          h(
             NButton,
             {
               text: true,
@@ -145,26 +144,67 @@
           ),
           h(NDivider, { vertical: true }),
           h(
-            NPopconfirm,
+            NButton,
             {
-              onPositiveClick: () => {
-                onRemove(row);
+              text: true,
+              onClick: async () => {
+                await exportAll(row.id);
               },
             },
+            { default: () => '导出' }
+          ),
+          h(NDivider, { vertical: true }),
+          h(
+            NDropdown,
             {
-              trigger: () => {
-                return h(
-                  NButton,
-                  {
-                    text: true,
-                  },
-                  { default: () => '删除' }
-                );
+              trigger: 'hover',
+              options: [
+                {
+                  label: '分段设置',
+                  key: 'split',
+                },
+                {
+                  label: '重新索引',
+                  key: 'reindex',
+                },
+                {
+                  label: '删除',
+                  key: 'remove',
+                },
+              ],
+              onSelect: (key: string) => {
+                switch (key) {
+                  case 'split':
+                    splitModalRef.value.openModal(row.id);
+                    break;
+                  case 'reindex':
+                    dialog.warning({
+                      title: '向量化',
+                      content: '确认重新向量化此文档吗',
+                      positiveText: '确认',
+                      onPositiveClick: async () => {
+                        await reindex(row.id);
+                        message.success('操作成功');
+                        await onSearch();
+                      },
+                    });
+                    break;
+                  case 'remove':
+                    dialog.warning({
+                      title: '删除',
+                      content: '确认删除此文档吗',
+                      positiveText: '确认',
+                      onPositiveClick: async () => {
+                        await remove(row.id);
+                        message.success('操作成功');
+                        await onSearch();
+                      },
+                    });
+                    break;
+                }
               },
-              default: () => {
-                return '确认删除此数据吗？';
-              },
-            }
+            },
+            { default: () => '管理' }
           ),
         ];
       },

@@ -46,7 +46,7 @@
 </template>
 
 <script setup lang="ts">
-  import { onMounted, ref } from 'vue';
+  import { ref } from 'vue';
   import { useMessage } from 'naive-ui';
   import { useRouter } from 'vue-router';
   import DataForm from './component/DataForm.vue';
